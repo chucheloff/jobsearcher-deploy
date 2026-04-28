@@ -1,0 +1,426 @@
+{
+  "gateway": {
+    "mode": "local",
+    "bind": "lan",
+    "controlUi": {
+      "allowedOrigins": [
+        "http://localhost:18789",
+        "http://127.0.0.1:18789"
+      ]
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "openrouter/anthropic/claude-haiku-4.5",
+        "fallbacks": [
+          "openrouter/anthropic/claude-sonnet-4.6"
+        ]
+      },
+      "models": {
+        "openrouter/anthropic/claude-haiku-4.5": {
+          "alias": "cheap"
+        },
+        "openrouter/anthropic/claude-sonnet-4.6": {
+          "alias": "mid"
+        },
+        "openrouter/anthropic/claude-opus-4.7": {
+          "alias": "heavy"
+        }
+      }
+    }
+  },
+  "mcp": {
+    "servers": {
+      "jobmcp": {
+        "url": "http://jobmcp:8000/mcp",
+        "transport": "streamable-http"
+      },
+      "slack": {
+        "url": "http://slack-mcp:13080/mcp",
+        "transport": "streamable-http"
+      },
+      "company": {
+        "url": "http://company-mcp:8080/mcp",
+        "transport": "streamable-http"
+      },
+      "gmail": {
+        "url": "http://gmail-mcp:8090/mcp",
+        "transport": "streamable-http"
+      }
+    }
+  },
+  "plugins": {
+    "entries": {
+      "google": {
+        "enabled": true
+      },
+      "openrouter": {
+        "enabled": true
+      },
+      "codex": {
+        "enabled": false
+      },
+      "acpx": {
+        "enabled": false
+      },
+      "active-memory": {
+        "enabled": false
+      },
+      "alibaba": {
+        "enabled": false
+      },
+      "amazon-bedrock": {
+        "enabled": false
+      },
+      "amazon-bedrock-mantle": {
+        "enabled": false
+      },
+      "anthropic-vertex": {
+        "enabled": false
+      },
+      "arcee": {
+        "enabled": false
+      },
+      "azure-speech": {
+        "enabled": false
+      },
+      "bluebubbles": {
+        "enabled": false
+      },
+      "bonjour": {
+        "enabled": false
+      },
+      "brave": {
+        "enabled": false
+      },
+      "browser": {
+        "enabled": false
+      },
+      "byteplus": {
+        "enabled": false
+      },
+      "cerebras": {
+        "enabled": false
+      },
+      "chutes": {
+        "enabled": false
+      },
+      "cloudflare-ai-gateway": {
+        "enabled": false
+      },
+      "comfy": {
+        "enabled": false
+      },
+      "copilot-proxy": {
+        "enabled": false
+      },
+      "deepgram": {
+        "enabled": false
+      },
+      "deepseek": {
+        "enabled": false
+      },
+      "device-pair": {
+        "enabled": false
+      },
+      "diagnostics-otel": {
+        "enabled": false
+      },
+      "diagnostics-prometheus": {
+        "enabled": false
+      },
+      "discord": {
+        "enabled": false
+      },
+      "document-extract": {
+        "enabled": false
+      },
+      "duckduckgo": {
+        "enabled": false
+      },
+      "elevenlabs": {
+        "enabled": false
+      },
+      "exa": {
+        "enabled": false
+      },
+      "fal": {
+        "enabled": false
+      },
+      "feishu": {
+        "enabled": false
+      },
+      "firecrawl": {
+        "enabled": false
+      },
+      "fireworks": {
+        "enabled": false
+      },
+      "github-copilot": {
+        "enabled": false
+      },
+      "google-meet": {
+        "enabled": false
+      },
+      "googlechat": {
+        "enabled": false
+      },
+      "gradium": {
+        "enabled": false
+      },
+      "groq": {
+        "enabled": false
+      },
+      "huggingface": {
+        "enabled": false
+      },
+      "imessage": {
+        "enabled": false
+      },
+      "inworld": {
+        "enabled": false
+      },
+      "irc": {
+        "enabled": false
+      },
+      "kilocode": {
+        "enabled": false
+      },
+      "line": {
+        "enabled": false
+      },
+      "llm-task": {
+        "enabled": false
+      },
+      "lmstudio": {
+        "enabled": false
+      },
+      "lobster": {
+        "enabled": false
+      },
+      "matrix": {
+        "enabled": false
+      },
+      "mattermost": {
+        "enabled": false
+      },
+      "memory-lancedb": {
+        "enabled": false
+      },
+      "memory-wiki": {
+        "enabled": false
+      },
+      "microsoft": {
+        "enabled": false
+      },
+      "microsoft-foundry": {
+        "enabled": false
+      },
+      "migrate-claude": {
+        "enabled": false
+      },
+      "migrate-hermes": {
+        "enabled": false
+      },
+      "minimax": {
+        "enabled": false
+      },
+      "mistral": {
+        "enabled": false
+      },
+      "moonshot": {
+        "enabled": false
+      },
+      "msteams": {
+        "enabled": false
+      },
+      "nextcloud-talk": {
+        "enabled": false
+      },
+      "nostr": {
+        "enabled": false
+      },
+      "nvidia": {
+        "enabled": false
+      },
+      "ollama": {
+        "enabled": false
+      },
+      "open-prose": {
+        "enabled": false
+      },
+      "opencode": {
+        "enabled": false
+      },
+      "opencode-go": {
+        "enabled": false
+      },
+      "openshell": {
+        "enabled": false
+      },
+      "perplexity": {
+        "enabled": false
+      },
+      "phone-control": {
+        "enabled": false
+      },
+      "qianfan": {
+        "enabled": false
+      },
+      "qqbot": {
+        "enabled": false
+      },
+      "qwen": {
+        "enabled": false
+      },
+      "runway": {
+        "enabled": false
+      },
+      "searxng": {
+        "enabled": false
+      },
+      "senseaudio": {
+        "enabled": false
+      },
+      "sglang": {
+        "enabled": false
+      },
+      "signal": {
+        "enabled": false
+      },
+      "slack": {
+        "enabled": false
+      },
+      "stepfun": {
+        "enabled": false
+      },
+      "synology-chat": {
+        "enabled": false
+      },
+      "synthetic": {
+        "enabled": false
+      },
+      "talk-voice": {
+        "enabled": false
+      },
+      "tavily": {
+        "enabled": false
+      },
+      "telegram": {
+        "enabled": false
+      },
+      "tencent": {
+        "enabled": false
+      },
+      "tlon": {
+        "enabled": false
+      },
+      "together": {
+        "enabled": false
+      },
+      "tokenjuice": {
+        "enabled": false
+      },
+      "tts-local-cli": {
+        "enabled": false
+      },
+      "twitch": {
+        "enabled": false
+      },
+      "venice": {
+        "enabled": false
+      },
+      "vercel-ai-gateway": {
+        "enabled": false
+      },
+      "vllm": {
+        "enabled": false
+      },
+      "voice-call": {
+        "enabled": false
+      },
+      "volcengine": {
+        "enabled": false
+      },
+      "voyage": {
+        "enabled": false
+      },
+      "vydra": {
+        "enabled": false
+      },
+      "web-readability": {
+        "enabled": false
+      },
+      "webhooks": {
+        "enabled": false
+      },
+      "whatsapp": {
+        "enabled": false
+      },
+      "xai": {
+        "enabled": false
+      },
+      "xiaomi": {
+        "enabled": false
+      },
+      "zai": {
+        "enabled": false
+      },
+      "zalo": {
+        "enabled": false
+      },
+      "zalouser": {
+        "enabled": false
+      },
+      "diffs": {
+        "enabled": true
+      },
+      "skill-workshop": {
+        "enabled": true
+      },
+      "openai": {
+        "enabled": true
+      },
+      "thread-ownership": {
+        "enabled": true
+      },
+      "memory-core": {
+        "enabled": true
+      },
+      "litellm": {
+        "enabled": true
+      },
+      "anthropic": {
+        "enabled": true
+      }
+    }
+  },
+  "tools": {
+    "alsoAllow": [
+      "read",
+      "edit",
+      "write",
+      "exec",
+      "jobmcp__search_jobs",
+      "jobmcp__get_job",
+      "jobmcp__list_companies",
+      "jobmcp__submit_mock_application",
+      "company__company_overview",
+      "company__company_profile",
+      "company__recent_news",
+      "company__linkedin_company_lookup",
+      "company__linkedin_lookup",
+      "company__wikipedia_company",
+      "company__cached_company_results",
+      "gmail__send_email",
+      "gmail__whoami",
+      "slack__conversations_add_message",
+      "slack__conversations_replies",
+      "slack__conversations_history",
+      "slack__channels_list",
+      "slack__channels_history"
+    ],
+    "profile": "minimal"
+  }
+}

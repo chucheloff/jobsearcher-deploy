@@ -1,0 +1,24 @@
+# Local secrets — copy .env.example to .env and fill in
+.env
+.env.local
+.env.*.local
+
+# Per-run logs from run-job-search.sh
+runs/
+*.log
+
+# Editor / OS junk
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Backups created by switch-openrouter-tier.sh and friends
+*.bak-*
+.bak-*/
+
+# Local docker compose overrides (use compose.override.yml for unstaged tweaks)
+docker-compose.override.yml
+compose.override.yml
+.env.bak
+compose.yml.bak*

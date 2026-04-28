@@ -1,0 +1,163 @@
+name: jobsearcher
+
+services:
+  valkey:
+    image: valkey/valkey:9.0.3-alpine3.23
+    command: ["valkey-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  jobmcp:
+    build:
+      context: ./jobmcp
+      dockerfile: Dockerfile
+    environment:
+      JOBMCP_HOST: ${JOBMCP_HOST}
+      JOBMCP_PORT: ${JOBMCP_PORT}
+      JOBMCP_MCP_PATH: ${JOBMCP_MCP_PATH}
+      JOBMCP_STATELESS_HTTP: ${JOBMCP_STATELESS_HTTP}
+      JOBMCP_VALKEY_URL: ${JOBMCP_VALKEY_URL}
+      JOBMCP_VALKEY_PREFIX: ${JOBMCP_VALKEY_PREFIX}
+      JOBMCP_SEED_ON_STARTUP: ${JOBMCP_SEED_ON_STARTUP}
+    ports:
+      - "8000:8000"
+    depends_on:
+      valkey:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request,sys; sys.exit(0 if urllib.request.urlopen(\"http://127.0.0.1:8000/health\").status==200 else 1)'"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    restart: unless-stopped
+
+  slack-mcp:
+    image: ghcr.io/korotovsky/slack-mcp-server:latest
+    command: ["-t", "http"]
+    environment:
+      SLACK_MCP_XOXB_TOKEN: ${SLACK_MCP_XOXB_TOKEN}
+      SLACK_MCP_XAPP_TOKEN: ${SLACK_MCP_XAPP_TOKEN}
+      SLACK_MCP_HOST: 0.0.0.0
+      SLACK_MCP_PORT: ${SLACK_MCP_PORT}
+      SLACK_MCP_ADD_MESSAGE_TOOL: ${SLACK_MCP_ADD_MESSAGE_TOOL}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:13080/ >/dev/null 2>&1 || nc -z 127.0.0.1 13080"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  company-mcp:
+    build:
+      context: ./companymcp
+      dockerfile: Dockerfile
+    environment:
+      APP_HOST: 0.0.0.0
+      APP_PORT: 8080
+      MCP_PATH: /mcp
+      VALKEY_URL: redis://valkey:6379/1
+      TAVILY_API_KEY: ${TAVILY_API_KEY}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      OPENROUTER_EXTRACTION_MODEL: ${OPENROUTER_EXTRACTION_MODEL}
+      OPENROUTER_QUALITY_MODEL: ${OPENROUTER_QUALITY_MODEL}
+    depends_on:
+      valkey:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 60s
+    restart: unless-stopped
+
+  gmail-mcp:
+    build:
+      context: ./gmail-mcp
+      dockerfile: Dockerfile
+    environment:
+      MAILER_BACKEND: ${MAILER_BACKEND:-}
+      MAIL_DEFAULT_TO: ${MAIL_DEFAULT_TO:-${GMAIL_DEFAULT_TO}}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM: ${RESEND_FROM:-JobSearcherBot <onboarding@resend.dev>}
+      GMAIL_USER: ${GMAIL_USER:-}
+      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
+      GMAIL_FROM_NAME: ${GMAIL_FROM_NAME:-JobSearcherBot}
+      PORT: 8090
+      MCP_PATH: /mcp
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket,sys; s=socket.socket(); s.settimeout(2); s.connect(('127.0.0.1',8090)); s.close()"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  openclaw-gateway:
+    image: ${OPENCLAW_IMAGE}
+    environment:
+      HOME: /home/node
+      TERM: xterm-256color
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
+      OPENCLAW_DISABLE_BONJOUR: ${OPENCLAW_DISABLE_BONJOUR}
+      TZ: ${OPENCLAW_TZ}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+    volumes:
+      - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
+      - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
+    group_add:
+      - "${DOCKER_GID}"
+    ports:
+      - "${OPENCLAW_GATEWAY_PORT}:18789"
+      - "${OPENCLAW_BRIDGE_PORT}:18790"
+    init: true
+    restart: unless-stopped
+    depends_on:
+      jobmcp:
+        condition: service_healthy
+      slack-mcp:
+        condition: service_started
+      company-mcp:
+        condition: service_healthy
+      gmail-mcp:
+        condition: service_healthy
+    command:
+      ["node", "dist/index.js", "gateway", "--bind", "${OPENCLAW_GATEWAY_BIND}", "--port", "18789"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:18789/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+
+  openclaw-cli:
+    image: ${OPENCLAW_IMAGE}
+    network_mode: "service:openclaw-gateway"
+    cap_drop: [NET_RAW, NET_ADMIN]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      HOME: /home/node
+      TERM: xterm-256color
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
+      BROWSER: echo
+      TZ: ${OPENCLAW_TZ}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+    volumes:
+      - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
+      - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
+    stdin_open: true
+    tty: true
+    init: true
+    entrypoint: ["sleep", "infinity"]
+    healthcheck:
+      disable: true
+    depends_on:
+      - openclaw-gateway

@@ -1,0 +1,9 @@
+[submodule "jobmcp"]
+	path = jobmcp
+	url = https://github.com/chucheloff/jobmcp.git
+[submodule "companymcp"]
+	path = companymcp
+	url = https://github.com/chucheloff/companymcp.git
+[submodule "gmail-mcp"]
+	path = gmail-mcp
+	url = https://github.com/chucheloff/gmail-mcp.git
