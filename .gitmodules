@@ -7,3 +7,6 @@
 [submodule "gmail-mcp"]
 	path = gmail-mcp
 	url = https://github.com/chucheloff/gmail-mcp.git
+[submodule "tavilysearch"]
+	path = tavilysearch
+	url = https://github.com/chucheloff/tavilysearch
