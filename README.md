@@ -47,6 +47,36 @@ MSG="/job-search dry-run=false limit=3" bash run-job-search.sh
 MSG="/job-search-reply" bash run-job-search.sh    # process pending replies
 ```
 
+## Scheduled runs (built-in cron)
+
+OpenClaw's gateway has a cron scheduler — no separate watchdog container needed. Two jobs are typically registered:
+
+```sh
+# Daily 09:00 UTC pass — three real briefings.
+docker compose exec openclaw-cli openclaw cron add \
+    --name job-search-daily \
+    --agent main \
+    --message "/job-search dry-run=false limit=3" \
+    --cron "0 9 * * *" --tz UTC \
+    --timeout-seconds 900 --thinking medium \
+    --expect-final --no-deliver --best-effort-deliver
+
+# Every 30 min during 09–19 UTC — drain Slack yes/no/skip replies.
+docker compose exec openclaw-cli openclaw cron add \
+    --name job-search-replies \
+    --agent main \
+    --message "/job-search-reply" \
+    --cron "*/30 9-19 * * *" --tz UTC \
+    --timeout-seconds 300 --thinking minimal \
+    --expect-final --no-deliver --best-effort-deliver
+
+docker compose exec openclaw-cli openclaw cron list
+docker compose exec openclaw-cli openclaw cron runs --id <job-id>
+docker compose exec openclaw-cli openclaw cron run  <job-id>   # debug-trigger now
+```
+
+Use `--no-deliver` (as above) — the pipeline already sends emails and Slack heads-ups via tool calls, so the agent's wrap-up reply doesn't need a separate broadcast channel.
+
 ## Layout
 
 | Path                         | What it is                                                         |
@@ -105,3 +135,5 @@ The script backs up both files (`*.bak-YYYYMMDD-HHMMSS`) before mutating.
 | `openclaw agent ... → connect ECONNREFUSED 127.0.0.1:18789` | cli netns stale after gateway recreate | `run-job-search.sh` handles automatically; otherwise `docker compose up -d --force-recreate --no-deps openclaw-cli`. |
 | `OpenRouter pricing fetch failed (timeout 60s)` | Cosmetic — cli pulls model pricing on boot | Ignore unless other OpenRouter calls also fail. |
 | Slack post fails with `not_in_channel` | Bot not added to the channel | In Slack: `/invite @JobSearcherBot` in the target channel. |
+| Cron run fails with `402 You requested up to 32000 tokens, but can only afford N` | Default per-call max_tokens (32K) exceeds remaining OpenRouter balance | Lower the cap: `openclaw config set --batch-file` against `models.providers.openrouter.maxTokens` (and per-model). Restart gateway. The `openclaw.template.json` shipped here already has 4096/3072/6144/8192 caps — copy from there. |
+| `openclaw.json` edits silently disappear after a gateway reload | Manual edits to top-level `models` block fail schema's required fields (`baseUrl`, `models[]`) and openclaw drops them on normalization | Use `openclaw config set --batch-file <file>` (canonical), not direct JSON edits. |

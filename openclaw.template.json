@@ -27,6 +27,9 @@
         "openrouter/anthropic/claude-opus-4.7": {
           "alias": "heavy"
         }
+      },
+      "params": {
+        "max_tokens": 4096
       }
     }
   },
@@ -422,5 +425,30 @@
       "slack__channels_history"
     ],
     "profile": "minimal"
+  },
+  "models": {
+    "providers": {
+      "openrouter": {
+        "baseUrl": "https://openrouter.ai/api/v1",
+        "maxTokens": 4096,
+        "models": [
+          {
+            "id": "anthropic/claude-haiku-4.5",
+            "name": "Claude Haiku 4.5",
+            "maxTokens": 3072
+          },
+          {
+            "id": "anthropic/claude-sonnet-4.6",
+            "name": "Claude Sonnet 4.6",
+            "maxTokens": 6144
+          },
+          {
+            "id": "anthropic/claude-opus-4.7",
+            "name": "Claude Opus 4.7",
+            "maxTokens": 8192
+          }
+        ]
+      }
+    }
   }
 }
