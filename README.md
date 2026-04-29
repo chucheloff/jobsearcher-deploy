@@ -117,6 +117,122 @@ The bundled skills assume:
 - `~/.openclaw/workspace/skills/job-search/SKILL.md` and `~/.openclaw/workspace/skills/job-search-reply/SKILL.md` are present (commit them in your *workspace* repo, not this deploy repo).
 - `~/.openclaw/workspace/scripts/processed.js` is installed (see Quickstart).
 
+## Versioning your openclaw setup (workspace + config)
+
+The deploy repo (this one) is for the *infrastructure* — compose stack, scripts, sanitized template. The actual openclaw runtime state lives in `~/.openclaw/` and is **not** tracked here. To replicate or sync your setup across machines you maintain a separate **workspace repo** plus a documented config-bootstrap procedure.
+
+### What lives where
+
+```
+~/.openclaw/                         ← whole openclaw home (per-host, mostly state)
+├── openclaw.json                    ← the gateway config — sensitive (api keys, tokens)
+├── openclaw.json.bak-*              ← backups; do NOT commit
+├── agents/main/
+│   ├── agent/auth-profiles.json     ← API keys for providers — SENSITIVE
+│   ├── sessions/*.jsonl             ← conversation history; transient
+│   └── sessions/*.trajectory.jsonl  ← run traces; transient
+├── cron/jobs.json                   ← scheduled jobs; replicable but per-host
+├── plugin-runtime-deps/             ← npm caches; rebuild-on-boot, never commit
+└── workspace/                       ← what your skills + agent personality live in ★
+    ├── MEMORY.md                    ← your target profile, prefs, guardrails
+    ├── cv.txt / cv.pdf              ← personal data
+    ├── USER.md / IDENTITY.md / SOUL.md / TOOLS.md / AGENTS.md ← persona/context
+    ├── memory/<date>.md             ← daily briefings logs (real msg ids — sensitive)
+    ├── skills/<name>/SKILL.md       ← the actual skill definitions ★
+    ├── scripts/                     ← skill helper scripts ★
+    ├── .openclaw/                   ← runtime state; do NOT commit
+    └── state/                       ← runtime state; do NOT commit
+```
+
+★ = the parts worth versioning.
+
+### What's sensitive (never commit)
+
+- `~/.openclaw/openclaw.json` — contains hex `OPENCLAW_GATEWAY_TOKEN`, OpenRouter base URL, and (on most installs) inlined API keys.
+- `~/.openclaw/agents/*/agent/auth-profiles.json` — raw API keys per provider.
+- Any `*.bak-*` file produced by tier-swap or manual edits.
+- `memory/<date>.md` files — they record real Gmail message-IDs and Slack `ts` values for delivered briefings; not credentials but personally-correlatable.
+- `cv.txt`, `cv.pdf`, `USER.md`, `MEMORY.md` — personal data. Keep these in a **private** repo.
+
+### Recommended layout: two repos
+
+1. **`jobsearcher-deploy`** (this repo, public) — compose stack, scripts, `.env.example`, `openclaw.template.json` (sanitized), MCP repos as submodules. No secrets.
+2. **`openclaw-workspace`** (private) — your `~/.openclaw/workspace` directory committed to a private GitHub repo. Tracks: `MEMORY.md`, `USER.md`, `IDENTITY.md`, `SOUL.md`, `TOOLS.md`, `AGENTS.md`, `HEARTBEAT.md`, `cv.*`, `skills/**`, `scripts/**`, `memory/**`. Gitignores: `.openclaw/`, `state/`, `*.bak-*`.
+
+`.gitignore` for the workspace repo:
+```
+*.bak-*
+state/
+.openclaw/
+.DS_Store
+*.swp
+```
+
+### Replicating on another machine
+
+```sh
+# 1. Clone the deploy repo (with submodules)
+git clone --recurse-submodules git@github.com:chucheloff/jobsearcher-deploy.git
+cd jobsearcher-deploy
+cp .env.example .env && $EDITOR .env          # paste your secrets
+
+# 2. Clone the private workspace repo into place
+mkdir -p ~/.openclaw
+git clone git@github.com:<you>/openclaw-workspace.git ~/.openclaw/workspace
+
+# 3. Copy the sanitized config template, then add provider auth interactively
+cp openclaw.template.json ~/.openclaw/openclaw.json
+docker compose run --rm openclaw-cli openclaw auth set openrouter   # prompts
+docker compose run --rm openclaw-cli openclaw auth set google       # if you use gemini
+
+# 4. Bring everything up
+docker compose up -d
+docker compose exec openclaw-cli openclaw skills list                # verify ✓
+
+# 5. Re-register cron jobs (gateway state, lives in ~/.openclaw/cron/jobs.json)
+docker compose exec openclaw-cli openclaw cron add --name job-search-replies \
+    --agent main --message "/job-search-reply" --cron "*/30 9-19 * * *" --tz UTC \
+    --timeout-seconds 300 --thinking minimal --expect-final --no-deliver --best-effort-deliver
+```
+
+### Day-to-day: what changes are worth committing
+
+Track in the workspace repo whenever you:
+- Edit `MEMORY.md` (target roles, deal-breakers, etc.)
+- Tweak any `skills/*/SKILL.md` (this is the bulk of agent behaviour)
+- Add a new helper to `scripts/`
+- Want to checkpoint a `memory/<date>.md` for audit (optional; these grow daily)
+
+Track in the deploy repo (this one) whenever you:
+- Change `compose.yml` (new MCP server, port change, env wiring)
+- Update `run-job-search.sh` / `switch-openrouter-tier.sh`
+- Bump submodule pins (`git -C <sub> pull` then `git add <sub>` here)
+- Adjust `openclaw.template.json` (after a config change you want others to inherit — re-run the sanitize step before committing)
+
+### Syncing two identically-configured agents
+
+If you run the same agent on two machines:
+- Workspace repo + branch of your choice on both — pull/push between them.
+- Deploy repo on both — same.
+- **Don't** sync `~/.openclaw/openclaw.json` directly — let each host have its own (they share token format from the template, not the literal token value).
+- **Do** sync `~/.openclaw/cron/jobs.json` if you want the same schedules — but watch for clock-skew or duplicate runs if both hosts share an agent identity (they shouldn't).
+- Per-host things to keep separate: `OPENCLAW_GATEWAY_TOKEN`, `auth-profiles.json`, `agents/*/sessions/`, `cron/jobs.json`, anything under `state/` or `plugin-runtime-deps/`.
+
+### Quick sanitize before committing the template again
+
+```sh
+# Strip personal/runtime fields, keep schema-significant ones.
+python3 -c "
+import json
+c=json.load(open('$HOME/.openclaw/openclaw.json'))
+c.pop('meta',None)
+json.dump(c, open('openclaw.template.json','w'), indent=2)
+print('ok')
+"
+```
+
+(`meta.lastTouchedAt` is the only changing field that drifts every restart and isn't useful in a template.)
+
 ## Switching tiers
 
 ```sh
