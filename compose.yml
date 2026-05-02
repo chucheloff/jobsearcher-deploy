@@ -3,7 +3,9 @@ name: jobsearcher
 services:
   valkey:
     image: valkey/valkey:9.0.3-alpine3.23
-    command: ["valkey-server", "--save", "", "--appendonly", "no"]
+    command: ["valkey-server", "--appendonly", "yes", "--appendfsync", "everysec", "--save", "60", "1"]
+    volumes:
+      - valkey-data:/data
     healthcheck:
       test: ["CMD", "valkey-cli", "ping"]
       interval: 5s
@@ -197,3 +199,8 @@ services:
       disable: true
     depends_on:
       - openclaw-gateway
+
+volumes:
+  valkey-data:
+    external: true
+    name: jobsearcher_valkey-data
